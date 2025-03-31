@@ -3,15 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "homepage": "https://T4JI.github.io/data_vis_final",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "start": "sirv public --no-clear"
+    "start": "sirv public --no-clear",
+    "deploy": "npm run build && gh-pages -d public"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-terser": "^0.4.0",
+    "gh-pages": "^6.3.0",
     "rollup": "^3.15.0",
     "rollup-plugin-css-only": "^4.3.0",
     "rollup-plugin-livereload": "^2.0.0",
@@ -21,4 +24,6 @@
   "dependencies": {
     "sirv-cli": "^2.0.0"
   }
+
+
 }
