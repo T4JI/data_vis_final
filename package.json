@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "homepage": "https://T4JI.github.io/data_vis_final",
+  "homepage": "https://t4ji.github.io/data_vis_final/",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
