@@ -23,8 +23,8 @@
     // Create a default projection centered on Boston.
     function createDefaultProjection() {
       return d3.geoMercator()
-        .scale(70000)
-        .center([-71.0589, 42.3501])
+        .scale(70000*2)
+        .center([-71.0589, 42.3101])
         .translate([width / 2, height / 2]);
     }
     
