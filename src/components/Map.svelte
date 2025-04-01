@@ -85,6 +85,16 @@
         })
         .attr("stroke", "#333")
         .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+       // Get the current fill, darken it, and set it.
+       const currentFill = d3.select(this).attr("fill");
+       d3.select(this).attr("fill", d3.color(currentFill).darker(0.2));
+   })
+   .on("mouseout", function(event, d) {
+       // Reset the fill based on the original data.
+       const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+       d3.select(this).attr("fill", vacancyMap[name] != null ? colorScale(vacancyMap[name]) : "#ccc");
+   })
         .on("click", (event, d) => {
            const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
            if (!selectedNeighborhood || selectedNeighborhood !== d) {
@@ -99,6 +109,7 @@
              removeBipocIndicator();
            }
         });
+        
     }
     
     // Zoom in using projection.fitExtent.
@@ -266,6 +277,8 @@
               .attr("height", height);
       await loadData();
     });
+
+    
   </script>
   
   <!-- Layout: map on left; on right, pie chart on top and bipoc indicator below -->
@@ -284,8 +297,7 @@
     #chart, #bipoc {
       text-align: center;
     }
-    path.neighborhood {
-      cursor: pointer;
-    }
+    
+
   </style>
   

@@ -1,5 +1,5 @@
 <script>
-	export let name;
+	
 	import Map from './components/Map.svelte';
   </script>
   
