@@ -36,7 +36,7 @@
     on:selectNeighborhood={handleSelectNeighborhood}
     on:resetNeighborhood={handleResetNeighborhood}
   />
-  <div style="margin-left: 20px; display: flex; flex-direction: column; align-items: center;">
+  <div style="margin-left: 40px; display: flex; flex-direction: column; align-items: center;">
     {#if selectedDetails}
       <PieChart details={selectedDetails} />
     {/if}
