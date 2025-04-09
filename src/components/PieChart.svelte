@@ -10,7 +10,7 @@
   
   // We'll define our legend data here so that it always matches our two slices.
   const legendData = [
-    { label: "Converted Dwellings", color: "#1f77b4" },
+    { label: "Homes", color: "#1f77b4" },
     { label: "Others", color: "#ff7f0e" }
   ];
   
@@ -52,7 +52,7 @@
     
     // Use fixed colors for the pie slices.
     const pieColor = d3.scaleOrdinal()
-                       .domain(["Converted Dwellings", "Others"])
+                       .domain(["Homes", "Others"])
                        .range(["#1f77b4", "#ff7f0e"]);
     
     // DATA JOIN for arcs.

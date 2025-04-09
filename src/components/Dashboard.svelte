@@ -25,6 +25,12 @@
   }
 </script>
 
+<header style="text-align: center; padding: 20px;">
+  <h1>Bubble Bursters Interactive Map</h1>
+  <h3>Group: Shivali Singireddy, Subhash Kantamneni, Irura Nyiha, Taji Manning</h3>
+  <p>A dynamic data visualization project exploring Boston neighborhoods.</p>
+</header>
+
 <div style="display: flex; justify-content: center; align-items: flex-start;">
   <Map 
     on:selectNeighborhood={handleSelectNeighborhood}
