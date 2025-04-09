@@ -114,15 +114,36 @@
       .on("mouseover", function(event, d) {
          const currentFill = d3.select(this).attr("fill");
          d3.select(this).attr("fill", d3.color(currentFill).darker(0.2));
-         // Optionally, add a tooltip.
+         // Remove any native title tooltip.
+         d3.select(this).select("title").remove();
+         // Append a text label that fades in.
          const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
-         d3.select(this).append("title").text(name);
+         const centroid = path.centroid(d);
+         svg.append("text")
+            .attr("class", "neighborhood-label")
+            .attr("x", centroid[0])
+            .attr("y", centroid[1])
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+            .style("fill", "#000")
+            .style("font-size", "14px")
+            .style("font-weight", "bold")
+            .style("pointer-events", "none") // disable pointer events to prevent flicker
+            .style("opacity", 0)  // initial opacity
+            .text(name)
+            .transition()
+            .duration(200)
+            .style("opacity", 1);
       })
       .on("mouseout", function(event, d) {
+         // Remove the neighborhood label.
+         svg.selectAll("text.neighborhood-label").remove();
          const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
          d3.select(this).attr("fill", vacancyMap[name] != null ? colorScale(vacancyMap[name]) : "#ccc");
       })
       .on("click", (event, d) => {
+         // Remove any existing label so it doesn't interfere during zoom.
+         svg.selectAll("text.neighborhood-label").remove();
          const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
          if (!selectedNeighborhood || selectedNeighborhood !== d) {
            selectedNeighborhood = d;
