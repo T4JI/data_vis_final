@@ -1,79 +1,66 @@
 <script>
   import { onMount, createEventDispatcher } from 'svelte';
   import * as d3 from 'd3';
+  import * as turf from '@turf/turf';  // for random point generation
   
-  // Dimensions.
+  // Dimensions and SVG container.
   const width = 960, height = 600, padding = 20;
   let svgElement, svg;
   
   // Data holders.
-  let geoData;            // Neighborhoods GeoJSON.
-  let neighborhoods;      // Array of neighborhood features.
-  let vacancyMap = {};    // Mapping: Neighborhood name -> Vacant Rate (decimal fraction).
-  let neighborhoodDetails = {}; // Mapping: Neighborhood name -> { converted, others }
-  let bipocMap = {};      // Mapping: Neighborhood name -> Bipoc Rate (decimal fraction).
-  
-  // Continuous color scale for vacancy.
-  let colorScale;
-  
-  // Track the currently selected neighborhood.
+  let geoData, neighborhoods;
+  let vacancyMap = {}, neighborhoodDetails = {}, bipocMap = {};
+  let colorScale, vacancyExtentGlobal;
   let selectedNeighborhood = null;
-  
-  // Default values for averaging (computed from CSV data).
-  let defaultDetails = null;
-  let defaultBipocRate = null;
+  let defaultDetails = null, defaultBipocRate = null;
   
   const dispatch = createEventDispatcher();
   
-  // Create a default projection centered on Boston.
+  // Projection and path generator.
   function createDefaultProjection() {
     return d3.geoMercator()
-      .scale(70000 * 2)
-      .center([-71.0589, 42.3101])
-      .translate([width / 2, height / 2]);
+             .scale(140000)  // simplified factor (70000*2)
+             .center([-71.0589, 42.3101])
+             .translate([width / 2, height / 2]);
   }
-  
   let projection = createDefaultProjection();
   let path = d3.geoPath().projection(projection);
   
-  // Add a global variable for vacancy extent for the legend.
-  let vacancyExtentGlobal; // new
-
-  // Load GeoJSON and CSV.
+  // Helper: Generate points within a polygon using Turf.
+  function generatePoints(feature, count) {
+    const points = [];
+    const bbox = turf.bbox(feature);
+    let attempts = 0;
+    while (points.length < count && attempts < 100) {
+      const pt = turf.randomPoint(1, { bbox }).features[0];
+      if (turf.booleanPointInPolygon(pt, feature)) points.push(pt.geometry.coordinates);
+      attempts++;
+    }
+    return points;
+  }
+  
+  // Load GeoJSON and CSV, compute defaults and color scale.
   async function loadData() {
     try {
-      // Load neighborhoods GeoJSON.
       geoData = await d3.json('data/neighborhoods.geojson');
       neighborhoods = geoData.features;
-      
-      // Load CSV of neighborhood details.
       const csvData = await d3.csv('data/Just Neighborhood Details.csv');
       csvData.forEach(d => {
         const name = d.Neighborhood.trim();
         vacancyMap[name] = +d["Vacant Rate"];
-        // Conversion percentages: given as decimals, so multiply by 100.
         const twoFam = +d["% of Condoconversions that TWO-FAM DWELL"] * 100;
         const threeFam = +d["% of Condoconversions that THREE-FAM DWELL"] * 100;
-        const converted = twoFam + threeFam;
-        const others = 100 - converted;
-        neighborhoodDetails[name] = { converted, others };
+        neighborhoodDetails[name] = { converted: twoFam + threeFam, others: 100 - (twoFam + threeFam) };
         bipocMap[name] = +d["Bipoc Rate"];
       });
-      
-      // Get unique neighborhood names.
       const neighborhoodNames = Array.from(new Set(
-        neighborhoods.map(f => (f.properties.Neighborhood || f.properties.neighborhood || f.properties.name || "").trim())
-          .filter(n => n !== "")
+        neighborhoods.map(f => (f.properties.Neighborhood || f.properties.neighborhood || f.properties.name || "").trim()).filter(n => n)
       ));
-      
-      // Compute the extent of vacancy rates.
       const vacancyRates = neighborhoodNames.map(n => vacancyMap[n]).filter(v => v != null);
-      const vacancyExtent = d3.extent(vacancyRates);
-      vacancyExtentGlobal = vacancyExtent; // new assignment for legend
-      // Create a continuous color scale (darker red for higher vacancy).
-      colorScale = d3.scaleSequential(d3.interpolateReds).domain(vacancyExtent);
-      
-      // Compute defaults (averages) for all neighborhoods.
+      vacancyExtentGlobal = d3.extent(vacancyRates);
+      colorScale = d3.scaleSequential(d3.interpolateReds).domain(vacancyExtentGlobal);
+  
+      // Compute defaults.
       let totalConverted = 0, totalOthers = 0, totalBipoc = 0, count = 0;
       neighborhoodNames.forEach(n => {
         if (neighborhoodDetails[n]) {
@@ -81,169 +68,152 @@
           totalOthers += neighborhoodDetails[n].others;
           count++;
         }
-        if (bipocMap[n] != null) {
-          totalBipoc += bipocMap[n];
-        }
+        if (bipocMap[n] != null) totalBipoc += bipocMap[n];
       });
       const avgConverted = count ? totalConverted / count : 0;
       const avgOthers = count ? totalOthers / count : 0;
-      const avgBipoc = count ? totalBipoc / count : 0;
       defaultDetails = { converted: avgConverted, others: avgOthers };
-      defaultBipocRate = avgBipoc;
-      
-      // Dispatch default values so the parent can display these before any selection.
+      defaultBipocRate = count ? totalBipoc / count : 0;
       dispatch("selectNeighborhood", { name: "Average", details: defaultDetails, bipocRate: defaultBipocRate });
-      
       drawMap();
-    } catch (error) {
-      console.error("Error loading data:", error);
+    } catch (e) {
+      console.error("Error loading data:", e);
     }
   }
   
-  // Draw neighborhood polygons.
-  function drawMap() {
-    svg.selectAll('*').remove();
-    svg.selectAll("path.neighborhood")
-      .data(neighborhoods)
-      .enter()
-      .append("path")
-      .attr("class", "neighborhood")
-      .attr("d", path)
-      .attr("fill", d => {
-         const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
-         return vacancyMap[name] != null ? colorScale(vacancyMap[name]) : "#ccc";
-      })
-      .attr("stroke", "#333")
-      .style("cursor", "pointer")
-      .on("mouseover", function(event, d) {
-         const currentFill = d3.select(this).attr("fill");
-         d3.select(this).attr("fill", d3.color(currentFill).darker(0.2));
-         // Remove any native title tooltip.
-         d3.select(this).select("title").remove();
-         // Append a text label that fades in.
-         const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
-         const centroid = path.centroid(d);
-         svg.append("text")
-            .attr("class", "neighborhood-label")
-            .attr("x", centroid[0])
-            .attr("y", centroid[1])
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "middle")
-            .style("fill", "#000")
-            .style("font-size", "14px")
-            .style("font-weight", "bold")
-            .style("pointer-events", "none") // disable pointer events to prevent flicker
-            .style("opacity", 0)  // initial opacity
-            .text(name)
-            .transition()
-            .duration(200)
-            .style("opacity", 1);
-      })
-      .on("mouseout", function(event, d) {
-         // Remove the neighborhood label.
-         svg.selectAll("text.neighborhood-label").remove();
-         const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
-         d3.select(this).attr("fill", vacancyMap[name] != null ? colorScale(vacancyMap[name]) : "#ccc");
-      })
-      .on("click", (event, d) => {
-         // Remove any existing label so it doesn't interfere during zoom.
-         svg.selectAll("text.neighborhood-label").remove();
-         const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
-         if (!selectedNeighborhood || selectedNeighborhood !== d) {
-           selectedNeighborhood = d;
-           zoomIn(d);
-           // Dispatch event with the selected neighborhood's details.
-           dispatch("selectNeighborhood", {
-             name,
-             details: neighborhoodDetails[name],
-             bipocRate: bipocMap[name]
-           });
-         } else {
-           // When clicking the same neighborhood to reset, we zoom out and send default averages.
-           selectedNeighborhood = null;
-           resetZoom();
-           dispatch("selectNeighborhood", {
-             name: "Average",
-             details: defaultDetails,
-             bipocRate: defaultBipocRate
-           });
-         }
-      });
-    // Call the new legend function at the end.
-    drawMapLegend();
+  // Common mouse event handlers.
+  function handleMouseOver(event, d, el) {
+    d3.select(el).attr("fill", d3.color(d3.select(el).attr("fill")).darker(0.2));
+    const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+    const centroid = path.centroid(d);
+    svg.append("text")
+       .attr("class", "neighborhood-label")
+       .attr("x", centroid[0])
+       .attr("y", centroid[1])
+       .attr("text-anchor", "middle")
+       .attr("dominant-baseline", "middle")
+       .style("fill", "#000")
+       .style("font-size", "14px")
+       .style("font-weight", "bold")
+       .style("pointer-events", "none")
+       .style("opacity", 0)
+       .text(name)
+       .transition().duration(200).style("opacity", 1);
+  }
+  function handleMouseOut(event, d, el) {
+    svg.selectAll("text.neighborhood-label").remove();
+    const name = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+    d3.select(el).attr("fill", vacancyMap[name] != null ? colorScale(vacancyMap[name]) : "#ccc");
   }
   
+  // Zoom functions.
   function zoomIn(feature) {
     const t = d3.transition().duration(800);
     projection.fitExtent([[padding, padding], [width - padding, height - padding]], feature);
     path = d3.geoPath().projection(projection);
-    svg.selectAll("path.neighborhood")
-       .transition(t)
-       .attr("d", path);
+    svg.selectAll("path.neighborhood").transition(t).attr("d", path);
   }
-  
   function resetZoom() {
     const t = d3.transition().duration(800);
     projection = createDefaultProjection();
     path = d3.geoPath().projection(projection);
-    svg.selectAll("path.neighborhood")
-       .transition(t)
-       .attr("d", path);
+    svg.selectAll("path.neighborhood").transition(t).attr("d", path);
   }
   
+  // Draw the map: neighborhoods and icons.
+  function drawMap() {
+    svg.selectAll("*").remove();
+    svg.selectAll("path.neighborhood")
+       .data(neighborhoods)
+       .enter()
+       .append("path")
+       .attr("class", "neighborhood")
+       .attr("d", path)
+       .attr("fill", d => {
+         const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+         return vacancyMap[n] != null ? colorScale(vacancyMap[n]) : "#ccc";
+       })
+       .attr("stroke", "#333")
+       .style("cursor", "pointer")
+       .on("mouseover", (event, d) => handleMouseOver(event, d, event.currentTarget))
+       .on("mouseout", (event, d) => handleMouseOut(event, d, event.currentTarget))
+       .on("click", (event, d) => {
+           svg.selectAll("text.neighborhood-label").remove();
+           const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+           if (!selectedNeighborhood || selectedNeighborhood !== d) {
+             selectedNeighborhood = d;
+             zoomIn(d);
+             dispatch("selectNeighborhood", { name: n, details: neighborhoodDetails[n], bipocRate: bipocMap[n] });
+           } else {
+             selectedNeighborhood = null;
+             resetZoom();
+             dispatch("selectNeighborhood", { name: "Average", details: defaultDetails, bipocRate: defaultBipocRate });
+           }
+       });
+    // Append icons based on vacancy percentage.
+    svg.selectAll("g.icon-group")
+       .data(neighborhoods)
+       .enter()
+       .append("g")
+       .attr("class", "icon-group")
+       .each(function(d) {
+         const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+         const rate = vacancyMap[n] != null ? vacancyMap[n] : 0;
+         const iconCount = Math.max(Math.ceil(rate * 10), 1);
+         let pts = generatePoints(d, iconCount);
+         if (pts.length === 0) pts = [path.centroid(d)];
+         d3.select(this).selectAll("circle.icon")
+           .data(pts)
+           .enter()
+           .append("circle")
+           .attr("class", "icon")
+           .attr("cx", p => p[0])
+           .attr("cy", p => p[1])
+           .attr("r", 4)
+           .style("fill", "blue")
+           .style("stroke", "#fff")
+           .style("stroke-width", "1px")
+           .on("mouseover", function() {
+             d3.select(this).transition().duration(100).attr("r", 8);
+           })
+           .on("mouseout", function() {
+             d3.select(this).transition().duration(100).attr("r", 4);
+           });
+       });
+    drawMapLegend();
+  }
+  
+  // Draw a continuous color legend.
   function drawMapLegend() {
-    // Remove existing legend if present.
     d3.select("#map-legend").remove();
-    
     const legendWidth = 200, legendHeight = 10;
-    
-    // Ensure a defs element exists.
     let defs = svg.select("defs");
-    if(defs.empty()){
-      defs = svg.append("defs");
-    }
-    
-    // Append a linear gradient.
-    const gradient = defs.append("linearGradient")
-      .attr("id", "legend-gradient");
-    
+    if (defs.empty()) { defs = svg.append("defs"); }
+    const gradient = defs.append("linearGradient").attr("id", "legend-gradient");
     const ticks = d3.ticks(vacancyExtentGlobal[0], vacancyExtentGlobal[1], 10);
-    
     gradient.selectAll("stop")
       .data(ticks)
       .enter()
       .append("stop")
-      .attr("offset", d => ((d - vacancyExtentGlobal[0])/(vacancyExtentGlobal[1]-vacancyExtentGlobal[0])*100) + "%")
-      .attr("stop-color", d => colorScale(d)); // use the same color scale
-    
-    // Append a group for the legend.
+      .attr("offset", d => (((d - vacancyExtentGlobal[0]) / (vacancyExtentGlobal[1] - vacancyExtentGlobal[0])) * 100) + "%")
+      .attr("stop-color", d => colorScale(d));
+  
     const legendGroup = svg.append("g")
       .attr("id", "map-legend")
       .attr("transform", `translate(${width - legendWidth - 30}, ${height - 40})`);
-    
-    // Append rectangle using the gradient.
     legendGroup.append("rect")
       .attr("width", legendWidth)
       .attr("height", legendHeight)
       .style("fill", "url(#legend-gradient)");
-    
-    // Create a linear scale and axis for the legend.
-    const xScale = d3.scaleLinear()
-      .domain(vacancyExtentGlobal)
-      .range([0, legendWidth]);
-    
-    const xAxis = d3.axisBottom(xScale)
-      .ticks(5)
-      .tickFormat(d3.format(".0%"));
-    
+  
+    const xScale = d3.scaleLinear().domain(vacancyExtentGlobal).range([0, legendWidth]);
+    const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(d3.format(".0%"));
     legendGroup.append("g")
       .attr("transform", `translate(0, ${legendHeight})`)
       .call(xAxis)
       .select(".domain").remove();
-    
-    // Append a label above the legend.
     legendGroup.append("text")
-      .attr("x", legendWidth/2)
+      .attr("x", legendWidth / 2)
       .attr("y", -5)
       .attr("text-anchor", "middle")
       .style("font-size", "12px")
@@ -252,9 +222,7 @@
   }
   
   onMount(async () => {
-    svg = d3.select(svgElement)
-            .attr("width", width)
-            .attr("height", height);
+    svg = d3.select(svgElement).attr("width", width).attr("height", height);
     await loadData();
   });
 </script>
@@ -265,10 +233,6 @@
 </div>
 
 <style>
-  svg {
-    border: 1px solid #ccc;
-  }
-  /*path.neighborhood {
-    cursor: pointer;
-  }*/
+  svg { border: 1px solid #ccc; }
+  /* ...existing styles... */
 </style>
