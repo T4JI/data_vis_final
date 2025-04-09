@@ -36,6 +36,9 @@
   let projection = createDefaultProjection();
   let path = d3.geoPath().projection(projection);
   
+  // Add a global variable for vacancy extent for the legend.
+  let vacancyExtentGlobal; // new
+
   // Load GeoJSON and CSV.
   async function loadData() {
     try {
@@ -66,6 +69,7 @@
       // Compute the extent of vacancy rates.
       const vacancyRates = neighborhoodNames.map(n => vacancyMap[n]).filter(v => v != null);
       const vacancyExtent = d3.extent(vacancyRates);
+      vacancyExtentGlobal = vacancyExtent; // new assignment for legend
       // Create a continuous color scale (darker red for higher vacancy).
       colorScale = d3.scaleSequential(d3.interpolateReds).domain(vacancyExtent);
       
@@ -165,6 +169,8 @@
            });
          }
       });
+    // Call the new legend function at the end.
+    drawMapLegend();
   }
   
   function zoomIn(feature) {
@@ -185,6 +191,66 @@
        .attr("d", path);
   }
   
+  function drawMapLegend() {
+    // Remove existing legend if present.
+    d3.select("#map-legend").remove();
+    
+    const legendWidth = 200, legendHeight = 10;
+    
+    // Ensure a defs element exists.
+    let defs = svg.select("defs");
+    if(defs.empty()){
+      defs = svg.append("defs");
+    }
+    
+    // Append a linear gradient.
+    const gradient = defs.append("linearGradient")
+      .attr("id", "legend-gradient");
+    
+    const ticks = d3.ticks(vacancyExtentGlobal[0], vacancyExtentGlobal[1], 10);
+    
+    gradient.selectAll("stop")
+      .data(ticks)
+      .enter()
+      .append("stop")
+      .attr("offset", d => ((d - vacancyExtentGlobal[0])/(vacancyExtentGlobal[1]-vacancyExtentGlobal[0])*100) + "%")
+      .attr("stop-color", d => colorScale(d)); // use the same color scale
+    
+    // Append a group for the legend.
+    const legendGroup = svg.append("g")
+      .attr("id", "map-legend")
+      .attr("transform", `translate(${width - legendWidth - 30}, ${height - 40})`);
+    
+    // Append rectangle using the gradient.
+    legendGroup.append("rect")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .style("fill", "url(#legend-gradient)");
+    
+    // Create a linear scale and axis for the legend.
+    const xScale = d3.scaleLinear()
+      .domain(vacancyExtentGlobal)
+      .range([0, legendWidth]);
+    
+    const xAxis = d3.axisBottom(xScale)
+      .ticks(5)
+      .tickFormat(d3.format(".0%"));
+    
+    legendGroup.append("g")
+      .attr("transform", `translate(0, ${legendHeight})`)
+      .call(xAxis)
+      .select(".domain").remove();
+    
+    // Append a label above the legend.
+    legendGroup.append("text")
+      .attr("x", legendWidth/2)
+      .attr("y", -5)
+      .attr("text-anchor", "middle")
+      .style("font-size", "12px")
+      .style("fill", "#333")
+      .text("Vacancy Percentage");
+  }
+  
   onMount(async () => {
     svg = d3.select(svgElement)
             .attr("width", width)
@@ -202,7 +268,7 @@
   svg {
     border: 1px solid #ccc;
   }
-  path.neighborhood {
+  /*path.neighborhood {
     cursor: pointer;
-  }
+  }*/
 </style>

@@ -207,7 +207,7 @@
   });
 </script>
 
-<div id="race-bar" style="width:300px; height:30px; margin: 10px 0 10px -250px;"></div>
+<div id="race-bar" style="width:100%; max-width:300px; height:30px; margin: 10px auto;"></div>
 
 <style>
   #race-bar {

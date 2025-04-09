@@ -157,13 +157,18 @@
   });
 </script>
 
-<div bind:this={container}></div>
+<div>
+  <h4 style="text-align: center; margin-bottom: 10px;">
+    Fraction of Condo Conversions That Were Homes
+  </h4>
+  <div bind:this={container}></div>
+</div>
 
 <style>
   div {
     text-align: center;
   }
-  .pie-tooltip {
+  /*.pie-tooltip {
     position: absolute;
     text-align: center;
     padding: 5px;
@@ -173,5 +178,5 @@
     pointer-events: none;
     color: #fff;
     opacity: 0;
-  }
+  }*/
 </style>

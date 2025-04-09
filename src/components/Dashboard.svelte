@@ -30,16 +30,32 @@
   <h3>Group: Shivali Singireddy, Subhash Kantamneni, Irura Nyiha, Taji Manning</h3>
   <p>A dynamic data visualization project exploring Boston neighborhoods.</p>
 </header>
-
-<div style="display: flex; justify-content: center; align-items: flex-start;">
-  <Map 
-    on:selectNeighborhood={handleSelectNeighborhood}
-    on:resetNeighborhood={handleResetNeighborhood}
-  />
-  <div style="margin-left: 20px; display: flex; flex-direction: column; align-items: center;">
-    {#if selectedDetails}
-      <PieChart details={selectedDetails} />
-    {/if}
-    <RaceBarChart selectedNeighborhoodName={selectedNeighborhoodName} />
+<div class="dashboard-container">
+  <div style="display: flex; justify-content: center; align-items: flex-start;">
+    <Map 
+      on:selectNeighborhood={handleSelectNeighborhood}
+      on:resetNeighborhood={handleResetNeighborhood}
+    />
+    <div style="margin-left: 20px; display: flex; flex-direction: column; align-items: center;">
+      {#if selectedDetails}
+        <PieChart details={selectedDetails} />
+      {/if}
+      <RaceBarChart selectedNeighborhoodName={selectedNeighborhoodName} />
+    </div>
   </div>
 </div>
+
+<style>
+  .dashboard-container {
+    max-width: 960px;
+    width: 90%;
+    margin: 0 auto;
+    padding: 10px;
+  }
+  @media (max-width: 600px) {
+    .dashboard-container {
+      padding: 5px;
+    }
+  }
+  /* ...existing styles... */
+</style>
