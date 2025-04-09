@@ -83,7 +83,7 @@
              .text(d => `${Math.round(d.data.value)}%`)
              .style("font-size", "16px")       // increased size
              .style("font-weight", "bold")     // bold the text
-             .style("fill", "#fff");
+             .style("fill", "#000"); // changed to black
     
     // MERGE + UPDATE
     const allArcs = arcsEnter.merge(arcs);
@@ -109,7 +109,8 @@
            .attr("transform", d => `translate(${arc.centroid(d)})`)
            .text(d => `${Math.round(d.data.value)}%`)
            .style("font-size", "16px")       // increased size
-           .style("font-weight", "bold");
+           .style("font-weight", "bold")
+           .style("fill", "#000"); // ensure text remains black
     
     drawLegend();
   }
@@ -159,7 +160,7 @@
 
 <div>
   <h4 style="text-align: center; margin-bottom: 10px;">
-    Fraction of Condo Conversions That Were Homes
+    Percent of Condo Conversions That Were Homes
   </h4>
   <div bind:this={container}></div>
 </div>
