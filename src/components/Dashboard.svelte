@@ -36,10 +36,12 @@
     on:selectNeighborhood={handleSelectNeighborhood}
     on:resetNeighborhood={handleResetNeighborhood}
   />
-  <div style="margin-left: 500px; display: flex; flex-direction: column; align-items: center;">
+ <div style="display: flex; flex-direction: column; align-items: center;">
     {#if selectedDetails}
       <PieChart details={selectedDetails} />
     {/if}
-    <RaceBarChart selectedNeighborhoodName={selectedNeighborhoodName} />
+    <div style="margin-left: 40px;">
+      <RaceBarChart selectedNeighborhoodName={selectedNeighborhoodName} />
+    </div>
   </div>
 </div>
