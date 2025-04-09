@@ -40,7 +40,7 @@
     {#if selectedDetails}
       <PieChart details={selectedDetails} />
     {/if}
-    <div style="margin-left: 40px;">
+    <div style="display: flex; flex-direction: column; align-items: center;">
       <RaceBarChart selectedNeighborhoodName={selectedNeighborhoodName} />
     </div>
   </div>
