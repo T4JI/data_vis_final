@@ -46,7 +46,7 @@
     
     const arc = d3.arc()
                   .innerRadius(radius * 0.4)
-                  .outerRadius(radius)
+                  .outerRadius(radius - 5)
                   .cornerRadius(5)
                   .padAngle(0.02);
     
