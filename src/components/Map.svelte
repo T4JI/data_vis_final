@@ -577,13 +577,22 @@
     Learn More About Viz
   </div>
   <div class="data-overlay" style="opacity: {overlayVisible ? 1 : 0}; pointer-events: {overlayVisible ? 'auto' : 'none'};">
-    <p>
-      Click on a Neighborhood to zoom in, click again to zoom out.<br><br>
-      This data was created using Analyze Boston's property assessment tables and 2022 parcel data.
-      The dataset consists of condo conversions in Boston from 2015 to 2024. Condo conversions are identified by finding
-      addresses that have a single entry in one year but multiple entries in the subsequent year, where addresses are defined
-      by a combination of street number, name, and suffix.
-    </p>
+    <div class="overlay-content">
+      <h2>Explore Boston's Neighborhoods</h2>
+      <p>
+        <strong>Interactive Map:</strong> Click on a neighborhood to zoom in and explore its details. Click again to zoom out.
+      </p>
+      <p>
+        <strong>Color Coding:</strong> Each neighborhood is shaded based on its <span class="highlight">vacancy rate</span>, with darker shades indicating higher rates.
+      </p>
+      <p>
+        <strong>Detailed Insights:</strong> Discover the percentage of buildings converted to condos and, of those, what percent were homes. The <span class="highlight">pie chart</span> and <span class="highlight">bar chart</span> on the right update dynamically to reflect the selected neighborhood.
+      </p>
+      <p>
+        <strong>Data Source:</strong> This visualization is powered by <em>Analyze Boston's</em> property assessment tables and 2022 parcel data. The dataset spans condo conversions in Boston from <span class="highlight">2015 to 2024</span>, which can be identified by changes in address entries over time.
+      </p>
+
+    </div>
   </div>
 </div>
 
@@ -621,19 +630,43 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.95);
     display: flex;
     justify-content: center;
     align-items: center;
-    text-align: center;
+    text-align: left;
     z-index: 1;
-    opacity: 0; /* Start hidden */
-    transition: opacity 0.3s ease; /* Add fade-in transition */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 
-  .data-overlay p {
-    font-size: 14px;
+  .overlay-content {
+    max-width: 600px;
+    font-family: Arial, sans-serif;
+    color: #333;
+    line-height: 1.6;
+  }
+
+  .overlay-content h2 {
+    font-size: 24px;
+    color: #007bff;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .overlay-content p {
+    margin-bottom: 15px;
+  }
+
+  .overlay-content .highlight {
+    color: #ff5722;
+    font-weight: bold;
+  }
+
+  .overlay-content em {
     color: #555;
-    margin: 0 20px;
+    font-style: italic;
   }
 </style>
