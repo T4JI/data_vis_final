@@ -444,85 +444,100 @@
   function drawClouds() {
     const cloudGroup = svg.append("g").attr("class", "clouds").style("opacity", 1);
   
+    // Define a drop shadow filter.
+    const defs = svg.append("defs");
+    const filter = defs.append("filter")
+      .attr("id", "cloud-shadow")
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+    filter.append("feDropShadow")
+      .attr("dx", -60)
+      .attr("dy", 20)
+      .attr("stdDeviation", 5)
+      .attr("flood-color", "#000")
+      .attr("flood-opacity", 0.3);
+  
     const cloudData = [
-      { x: -200, y: 50, width: 150, height: 80 },
-      { x: 300, y: 100, width: 200, height: 100 },
-      { x: 600, y: 200, width: 180, height: 90 },
-      { x: -400, y: 150, width: 220, height: 110 },
+      { x: -200, y: 50, width: 150, height: 80, src: "data/clouds/cloud1.png", speed: 20 },
+      { x: 300, y: 100, width: 200, height: 100, src: "data/clouds/cloud2.png", speed: 23 },
+      { x: -400, y: 225, width: 220, height: 110, src: "data/clouds/cloud4.png", speed: 30 },
+      { x: 600, y: 350, width: 180, height: 90, src: "data/clouds/cloud3.png", speed: 33 },
     ];
   
-    cloudGroup.selectAll("g.cloud")
+    const clouds = cloudGroup.selectAll("image.cloud")
       .data(cloudData)
       .enter()
-      .append("g")
+      .append("image")
       .attr("class", "cloud")
-      .each(function (d) {
-        const cloud = d3.select(this);
-  
-        // Add multiple ellipses to create a fluffy cloud effect.
-        cloud.append("ellipse")
-          .attr("cx", d.x)
-          .attr("cy", d.y)
-          .attr("rx", d.width / 2)
-          .attr("ry", d.height / 2)
-          .attr("fill", "#D3D3D3") // Light blue color for clouds.
-          .attr("stroke", "#D3D3D3") // Add stroke to clouds.
-          .attr("stroke-width", 2)
-          .attr("opacity", 0.9)
-          .on("mouseover", function () {
-            d3.select(this).transition().duration(200).attr("opacity", 0.5); // Reduce opacity on hover.
-          })
-          .on("mouseout", function () {
-            d3.select(this).transition().duration(200).attr("opacity", 0.9); // Restore opacity.
-          });
-  
-        cloud.append("ellipse")
-          .attr("cx", d.x + d.width * 0.3)
-          .attr("cy", d.y - d.height * 0.2)
-          .attr("rx", d.width * 0.6 / 2)
-          .attr("ry", d.height * 0.6 / 2)
-          .attr("fill", "#D3D3D3")
-          .attr("stroke", "#D3D3D3")
-          .attr("stroke-width", 2)
-          .attr("opacity", 0.8)
-          .on("mouseover", function () {
-            d3.select(this).transition().duration(200).attr("opacity", 0.5);
-          })
-          .on("mouseout", function () {
-            d3.select(this).transition().duration(200).attr("opacity", 0.8);
-          });
-  
-        cloud.append("ellipse")
-          .attr("cx", d.x - d.width * 0.3)
-          .attr("cy", d.y - d.height * 0.2)
-          .attr("rx", d.width * 0.5 / 2)
-          .attr("ry", d.height * 0.5 / 2)
-          .attr("fill", "#D3D3D3")
-          .attr("stroke", "#D3D3D3")
-          .attr("stroke-width", 2)
-          .attr("opacity", 0.7)
-          .on("mouseover", function () {
-            d3.select(this).transition().duration(200).attr("opacity", 0.5);
-          })
-          .on("mouseout", function () {
-            d3.select(this).transition().duration(200).attr("opacity", 0.7);
-          });
+      .attr("x", d => d.x)
+      .attr("y", d => d.y)
+      .attr("width", d => d.width)
+      .attr("height", d => d.height)
+      .attr("href", d => d.src)
+      .style("opacity", 0.76)
+      .style("filter", "url(#cloud-shadow)") // Apply the drop shadow filter
+      .style("pointer-events", "all") // Enable hover interactions by default
+      .on("mouseover", function () {
+        d3.select(this).style("opacity", 0.5); // Reduce opacity on hover.
+      })
+      .on("mouseout", function () {
+        d3.select(this).style("opacity", 0.76); // Restore opacity.
       });
   
-    // Animate the clouds to move horizontally.
-    function animateClouds() {
-      cloudGroup.selectAll("g.cloud")
+    // Animate the clouds to move horizontally and reset independently after moving off-screen.
+    function animateCloud(d) {
+      const cloudWidth = d.width;
+      const screenWidth = width;
+  
+      d3.select(this)
         .transition()
-        .duration(30000)
+        .duration(() => {
+          const distance = screenWidth + cloudWidth+60; // Total distance to travel, where 60 is cloud shadow length
+          return (distance / d.speed) * 1000; // Duration in milliseconds based on individual speed
+        })
         .ease(d3.easeLinear)
-        .attr("transform", d => `translate(${d.x + 800}, ${d.y})`)
-        .on("end", function (d) {
-          d3.select(this).attr("transform", `translate(${d.x - 800}, ${d.y})`); // Reset position after moving off-screen.
-          animateClouds(); // Restart animation.
+        .attr("x", screenWidth+60)
+        .on("end", function () {
+          d3.select(this)
+            .attr("x", -cloudWidth) // Reset position to start off-screen
+            .style("opacity", 0.76); // Restore opacity
+          animateCloud.call(this, d); // Restart animation
         });
     }
   
-    animateClouds();
+    clouds.each(function (d) {
+      // Add a random delay to stagger the start times of the clouds
+      const delay = Math.random() * 100; // Random delay between 0 and 100 milseconds
+      setTimeout(() => animateCloud.call(this, d), delay);
+    });
+  
+    // Check if a cloud is above a neighborhood and adjust its behavior.
+    function updateCloudBehavior() {
+      clouds.each(function (d) {
+        const cloud = d3.select(this);
+        const cloudBBox = this.getBoundingClientRect();
+        const isAboveNeighborhood = svg.selectAll("path.neighborhood").nodes().some(neighborhood => {
+          const neighborhoodBBox = neighborhood.getBoundingClientRect();
+          return (
+            cloudBBox.left < neighborhoodBBox.right &&
+            cloudBBox.right > neighborhoodBBox.left &&
+            cloudBBox.top < neighborhoodBBox.bottom &&
+            cloudBBox.bottom > neighborhoodBBox.top
+          );
+        });
+  
+        if (isAboveNeighborhood) {
+          cloud.style("pointer-events", "none"); // Disable interactions.
+        } else {
+          cloud.style("pointer-events", "all"); // Restore interactions.
+        }
+      });
+    }
+  
+    // Periodically check cloud positions relative to neighborhoods.
+    setInterval(updateCloudBehavior, 100);
   }
   
   // Add a function to remove clouds.
