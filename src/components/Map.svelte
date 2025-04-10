@@ -293,30 +293,14 @@
         .attr("fill", i < homeCount ? "#1f77b4" : "#ff7f0e") // Blue for homes, orange for non-homes.
         .attr("opacity", 0.3);
   
-      // Add the home icon with hover effect.
+      // Add the home icon.
       detailGroup.append("image")
         .attr("class", "center-icon")
         .attr("href", "data/home_icon2.gif")
         .attr("width", 70)
         .attr("height", 70)
         .attr("x", iconX - 35) // Center the icon at the point.
-        .attr("y", iconY - 35)
-        .on("mouseover", function () {
-          d3.select(this)
-            .transition().duration(200)
-            .attr("width", 90) // Increase size on hover.
-            .attr("height", 90)
-            .attr("x", iconX - 45)
-            .attr("y", iconY - 45);
-        })
-        .on("mouseout", function () {
-          d3.select(this)
-            .transition().duration(200)
-            .attr("width", 70) // Restore original size.
-            .attr("height", 70)
-            .attr("x", iconX - 35)
-            .attr("y", iconY - 35);
-        });
+        .attr("y", iconY - 35);
     }
   
     detailGroup.transition().duration(600).style("opacity", 1);
@@ -377,7 +361,7 @@
     mapGroup.transition().duration(600).style("opacity", 1);
   }
   
-  // Modify the drawClouds function to add a stroke and hover effect.
+  // Modify the drawClouds function to improve cloud appearance.
   function drawClouds() {
     const cloudGroup = svg.append("g").attr("class", "clouds");
   
@@ -403,8 +387,6 @@
           .attr("rx", d.width / 2)
           .attr("ry", d.height / 2)
           .attr("fill", "white")
-          .attr("stroke", "#ccc") // Add stroke to the clouds.
-          .attr("stroke-width", 2)
           .attr("opacity", 0.9);
   
         cloud.append("ellipse")
@@ -413,8 +395,6 @@
           .attr("rx", d.width * 0.6 / 2)
           .attr("ry", d.height * 0.6 / 2)
           .attr("fill", "white")
-          .attr("stroke", "#ccc")
-          .attr("stroke-width", 2)
           .attr("opacity", 0.8);
   
         cloud.append("ellipse")
@@ -423,22 +403,7 @@
           .attr("rx", d.width * 0.5 / 2)
           .attr("ry", d.height * 0.5 / 2)
           .attr("fill", "white")
-          .attr("stroke", "#ccc")
-          .attr("stroke-width", 2)
           .attr("opacity", 0.7);
-      });
-  
-    // Add hover effect to make clouds more transparent.
-    cloudGroup.selectAll("g.cloud")
-      .on("mouseover", function () {
-        d3.select(this).selectAll("ellipse")
-          .transition().duration(200)
-          .attr("opacity", 0.4); // Reduce opacity on hover.
-      })
-      .on("mouseout", function () {
-        d3.select(this).selectAll("ellipse")
-          .transition().duration(200)
-          .attr("opacity", (d, i) => 0.9 - i * 0.1); // Restore original opacity.
       });
   
     // Animate the clouds to move horizontally.
