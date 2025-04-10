@@ -121,6 +121,16 @@
       .duration(800)
       .style("opacity", opacity);
   }
+
+  // Modify fadeLegend to handle both fading in and out with a smooth transition.
+  function fadeLegend(opacity) {
+    const legend = svg.select("#map-legend");
+    if (!legend.empty()) {
+      legend.transition()
+        .duration(800)
+        .style("opacity", opacity);
+    }
+  }
   
   // Zoom functions.
   function zoomIn(feature) {
@@ -130,6 +140,7 @@
     svg.selectAll("path.neighborhood").transition(t).attr("d", path);
   
     fadeClouds(0); // Fade clouds out when zooming in.
+    fadeLegend(0); // Fade legend out when zooming in.
   }
   function resetZoom() {
     const t = d3.transition().duration(800);
@@ -138,6 +149,10 @@
     svg.selectAll("path.neighborhood").transition(t).attr("d", path);
   
     fadeClouds(1); // Fade clouds in when resetting zoom.
+    fadeLegend(1); // Fade legend back in smoothly when resetting zoom.
+
+    // Redraw the legend after resetting the zoom.
+    drawMapLegend();
   }
   
   // Draw the map: neighborhoods and icons.
@@ -206,10 +221,11 @@
             d3.select(this).transition().duration(100).attr("r", 4);
           });
       });
+    // Redraw the legend.
     drawMapLegend();
   }
   
-  // Draw a continuous color legend.
+  // Modify drawMapLegend to ensure it starts with opacity 0 and fades in.
   function drawMapLegend() {
     d3.select("#map-legend").remove();
     const legendWidth = 200, legendHeight = 10;
@@ -226,7 +242,9 @@
   
     const legendGroup = svg.append("g")
       .attr("id", "map-legend")
-      .attr("transform", `translate(${width - legendWidth - 30}, ${height - 40})`);
+      .attr("transform", `translate(${width - legendWidth - 30}, ${height - 40})`)
+      .style("opacity", 0); // Start with opacity 0.
+  
     legendGroup.append("rect")
       .attr("width", legendWidth)
       .attr("height", legendHeight)
@@ -245,6 +263,11 @@
       .style("font-size", "12px")
       .style("fill", "#333")
       .text("Vacancy Percentage");
+  
+    // Fade the legend in smoothly.
+    legendGroup.transition()
+      .duration(800)
+      .style("opacity", 1);
   }
   
   // Add a new helper function to draw the detail placeholder.
@@ -288,6 +311,14 @@
     const homeCount = Math.round(iconCount * (homePercent / 100));
     const nonHomeCount = iconCount - homeCount;
   
+    const shadowPercent = conversionPercent; // Percentage of icons with drop shadows.
+    const shadowCount = Math.round(iconCount * (shadowPercent / 100));
+    const shadowHomeCount = Math.round(shadowCount * (homePercent / 100)); // Drop shadows for homes.
+    const shadowNonHomeCount = shadowCount - shadowHomeCount; // Drop shadows for non-homes.
+  
+    let shadowHomeCounter = 0;
+    let shadowNonHomeCounter = 0;
+  
     for (let i = 0; i < iconCount; i++) {
       let iconX, iconY;
   
@@ -297,13 +328,24 @@
         iconY = Math.random() * (yMax - yMin) + yMin;
       } while (!isPointInNeighborhood(iconX, iconY));
   
-      // Add a low-opacity circle as a drop shadow.
-      detailGroup.append("circle")
-        .attr("cx", iconX)
-        .attr("cy", iconY)
-        .attr("r", 20)
-        .attr("fill", i < homeCount ? "#ff7f0e": "#1f77b4") // Blue for homes, orange for non-homes.
-        .attr("opacity", 0.3);
+      // Add a low-opacity circle as a drop shadow for only `shadowCount` icons.
+      if (shadowHomeCounter < shadowHomeCount && i < homeCount) {
+        detailGroup.append("circle")
+          .attr("cx", iconX)
+          .attr("cy", iconY)
+          .attr("r", 20)
+          .attr("fill", "#ff7f0e") // Blue for homes.
+          .attr("opacity", 0.3);
+        shadowHomeCounter++;
+      } else if (shadowNonHomeCounter < shadowNonHomeCount && i >= homeCount) {
+        detailGroup.append("circle")
+          .attr("cx", iconX)
+          .attr("cy", iconY)
+          .attr("r", 20)
+          .attr("fill", "#1f77b4") // Orange for non-homes.
+          .attr("opacity", 0.3);
+        shadowNonHomeCounter++;
+      }
   
       // Add the home icon.
       detailGroup.append("image")
@@ -376,6 +418,9 @@
     // Add clouds to the zoomed-out view.
     drawClouds();
     
+    // Redraw the legend when the map is reset.
+    drawMapLegend();
+
     mapGroup.transition().duration(600).style("opacity", 1);
   }
   

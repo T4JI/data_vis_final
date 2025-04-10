@@ -5,7 +5,7 @@
   export let selectedNeighborhoodName = "";
   let csvData = [];
   let currentData = null;
-  const raceCategories = ["Hisp Rate", "Black Rate", "Asian Rate", "White Rate", "Other and Two All Rate"];
+  const raceCategories = ["Hisp Rate", "Asian Rate", "Black Rate", "White Rate", "Other and Two All Rate"];
   const colorScale = d3.scaleOrdinal()
                        .domain(raceCategories)
                        .range(d3.schemeSpectral[raceCategories.length])
@@ -36,6 +36,7 @@
       cumulative += value;
       return { category: cat, value, start, end: cumulative };
     });
+    const dominantSegment = segments.reduce((max, seg) => seg.value > max.value ? seg : max, segments[0]);
     let svg = d3.select("#race-bar").select("svg.chart");
     if (svg.empty()) {
       svg = d3.select("#race-bar")
@@ -56,14 +57,15 @@
             .attr("width", d => d.value * chartWidth)
             .attr("x", d => d.start * chartWidth);
     segEnter.append("text")
-            .attr("x", d => (d.start + d.value/2) * chartWidth)
-            .attr("y", chartHeight/2)
+            .attr("x", d => (d.start + d.value / 2) * chartWidth)
+            .attr("y", chartHeight / 2)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "middle")
-            .text(d => `${(d.value * 100).toFixed(1)}%`)
-            .style("opacity", 0)
-            .style("fill", "#fff")
-            .style("font-size", "10px");
+            .text(d => d === dominantSegment ? `${Math.round(d.value * 100)}%` : "")
+            .style("opacity", d => d === dominantSegment ? 1 : 0)
+            .style("fill", "#000")
+            .style("font-size", d => d === dominantSegment ? "12px" : "10px") // Slightly larger for dominant
+            .style("font-weight", d => d === dominantSegment ? "bold" : "normal"); // Bold for dominant
     const segMerge = segEnter.merge(seg);
     segMerge.select("rect")
             .transition().duration(800)
@@ -72,8 +74,12 @@
             .attr("fill", d => colorScale(d.category));
     segMerge.select("text")
             .transition().duration(800)
-            .attr("x", d => (d.start + d.value/2) * chartWidth)
-            .text(d => `${(d.value * 100).toFixed(1)}%`);
+            .attr("x", d => (d.start + d.value / 2) * chartWidth)
+            .text(d => d === dominantSegment ? `${Math.round(d.value * 100)}%` : "")
+            .style("opacity", d => d === dominantSegment ? 1 : 0)
+            .style("fill", "#000")
+            .style("font-size", d => d === dominantSegment ? "12px" : "10px") // Slightly larger for dominant
+            .style("font-weight", d => d === dominantSegment ? "bold" : "normal"); // Bold for dominant
     segMerge.on("mouseover", function(event, d) {
       d3.select(this).select("rect")
         .transition().duration(200)
@@ -84,7 +90,7 @@
       d3.select(this).select("text")
         .transition().duration(200)
         .style("opacity", 1)
-        .style("fill", "#000")
+        .style("fill", "#000") // Ensure text is black on hover
         .style("font-size", "16px")
         .style("font-weight", "bold")
         .text(`${Math.round(d.value * 100)}%`);
@@ -98,10 +104,11 @@
         .attr("height", chartHeight);
       d3.select(this).select("text")
         .transition().duration(200)
-        .style("opacity", 0)
+        .style("opacity", d === dominantSegment ? 1 : 0)
+        .style("fill", "#000") // Ensure text is black after hover
         .style("font-size", "10px")
         .style("font-weight", "normal")
-        .text(`${Math.round(d.value * 100)}%`);
+        .text(d === dominantSegment ? `${Math.round(d.value * 100)}%` : "");
     });
     seg.exit().remove();
     drawLegend();
@@ -118,7 +125,7 @@
                          .style("display", "block")
                          .style("margin-top", "5px");
     const legendItemWidth = chartWidth / raceCategories.length;
-    const legendLabels = ["Hisp. ", "Black", "Asian", "White", "Other"];
+    const legendLabels = ["Hisp. ", "Asian", "Black", "White", "Other"];
     const legendItems = legendSvg.selectAll("g.legend-item")
       .data(raceCategories)
       .enter().append("g")
