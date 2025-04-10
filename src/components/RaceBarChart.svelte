@@ -132,10 +132,10 @@
       .attr("class", "legend-item")
       .attr("transform", (d,i)=> `translate(${i * legendItemWidth},0)`);
     legendItems.append("rect")
-      .attr("x", 5)
-      .attr("y", 5)
-      .attr("width", 12)
-      .attr("height", 12)
+      .attr("x", -1)
+      .attr("y", -1)
+      .attr("width", 20)
+      .attr("height", 20)
       .attr("fill", d => colorScale(d));
     legendItems.append("text")
       .attr("x", 22)
@@ -143,7 +143,7 @@
       .text((d,i)=> legendLabels[i])
       .style("font-size", "14px")
       .style("fill", "#333")
-      .style("font-weight", "bold");
+      .style("font-weight", "normal");
   }
   
   onMount(async () => {

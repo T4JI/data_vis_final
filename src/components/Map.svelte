@@ -583,13 +583,16 @@
         <strong>Interactive Map:</strong> Click on a neighborhood to zoom in and explore its details. Click again to zoom out.
       </p>
       <p>
-        <strong>Color Coding:</strong> Each neighborhood is shaded based on its <span class="highlight">vacancy rate</span>, with darker shades indicating higher rates.
+        <strong>Color Coding:</strong> Each neighborhood is shaded based on its <span class="highlight">vacancy rate</span>, with darker shades indicating higher rates of vacant buildings. 
       </p>
       <p>
-        <strong>Detailed Insights:</strong> Discover the percentage of buildings converted to condos and, of those, what percent were homes. The <span class="highlight">pie chart</span> and <span class="highlight">bar chart</span> on the right update dynamically to reflect the selected neighborhood.
+        <strong>Where There is Darkness, There is Light:</strong> Discover the percentage of buildings converted to condos and, of those, what percent were homes. The <span class="highlight">color of the shadows</span> beneath each building indicates if the condo condversion was a home or not. All the non-colored shadows indicate buildings that were not converted whatsoever. The quantity of all these shadow types are proportionally accurate to the selected neighborhood.
+      </p> 
+      <p>  
+        <strong>Dynamic Across Scales:</strong>  The <span class="highlight">pie chart</span> and <span class="highlight">bar chart</span> on the right update dynamically to reflect the selected neighborhood. Hover over the bar chart to see exact percentages for each ethnicity. When zoomed out, the pie chart and bar chart will show their average values of across all neighborhoods.
       </p>
       <p>
-        <strong>Data Source:</strong> This visualization is powered by <em>Analyze Boston's</em> property assessment tables and 2022 parcel data. The dataset spans condo conversions in Boston from <span class="highlight">2015 to 2024</span>, which can be identified by changes in address entries over time.
+        <strong>Data Source:</strong> This visualization is powered by <em>Analyze Boston's</em> property assessment tables and 2022 parcel data. The dataset spans condo conversions in Boston from <span class="highlight">2015 to 2024</span>, which can be identified by changes in address entries over time. The property assessment records of the City of Boston from 2004-2024, were used  for the vacany rates.
       </p>
 
     </div>
@@ -643,8 +646,8 @@
   }
 
   .overlay-content {
-    max-width: 600px;
-    font-family: Arial, sans-serif;
+    max-width: 800px;
+    font-family: Helvetica, sans-serif;
     color: #333;
     line-height: 1.6;
   }
@@ -654,15 +657,24 @@
     color: #007bff;
     margin-bottom: 15px;
     text-align: center;
+    font-family: "Special Gothic Expanded One", sans-serif;
+    font-weight: normal;
+    
   }
 
+  .overlay-content strong {
+    font-family: "Special Gothic Expanded One", sans-serif;
+    font-weight: normal;
+    
+  }
   .overlay-content p {
     margin-bottom: 15px;
   }
 
   .overlay-content .highlight {
     color: #ff5722;
-    font-weight: bold;
+    font-family: "Special Gothic Expanded One", sans-serif;
+    font-weight: normal;
   }
 
   .overlay-content em {
