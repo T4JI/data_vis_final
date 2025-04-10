@@ -9,10 +9,11 @@
   
   // Data holders.
   let geoData, neighborhoods;
-  let vacancyMap = {}, neighborhoodDetails = {}, bipocMap = {};
+  let vacancyMap = {}, neighborhoodDetails = {}, bipocMap = {}, simpleConversion = {}; // new: add simpleConversion mapping
   let colorScale, vacancyExtentGlobal;
   let selectedNeighborhood = null;
   let defaultDetails = null, defaultBipocRate = null;
+  let detailedView = false; // new: track if in detailed view
   
   const dispatch = createEventDispatcher();
   
@@ -52,6 +53,13 @@
         const threeFam = +d["% of Condoconversions that THREE-FAM DWELL"] * 100;
         neighborhoodDetails[name] = { converted: twoFam + threeFam, others: 100 - (twoFam + threeFam) };
         bipocMap[name] = +d["Bipoc Rate"];
+      });
+      // NEW: load simple conversion data
+      const zipcodeData = await d3.csv('data/Neighborhood Zipcode Most Details.csv');
+      zipcodeData.forEach(d => {
+        const name = d.Neighborhood.trim();
+        // The CSV value is like "0.18" meaning 18%, so multiply by 100.
+        simpleConversion[name] = parseFloat(d["Simple Condo Conversion %"]) * 100;
       });
       const neighborhoodNames = Array.from(new Set(
         neighborhoods.map(f => (f.properties.Neighborhood || f.properties.neighborhood || f.properties.name || "").trim()).filter(n => n)
@@ -123,63 +131,69 @@
   // Draw the map: neighborhoods and icons.
   function drawMap() {
     svg.selectAll("*").remove();
-    svg.selectAll("path.neighborhood")
-       .data(neighborhoods)
-       .enter()
-       .append("path")
-       .attr("class", "neighborhood")
-       .attr("d", path)
-       .attr("fill", d => {
+    // Create a group for the map view.
+    const mapGroup = svg.append("g").attr("class", "map-view").style("opacity", 1);
+    
+    mapGroup.selectAll("path.neighborhood")
+      .data(neighborhoods)
+      .enter()
+      .append("path")
+      .attr("class", "neighborhood")
+      .attr("d", path)
+      .attr("fill", d => {
          const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
          return vacancyMap[n] != null ? colorScale(vacancyMap[n]) : "#ccc";
-       })
-       .attr("stroke", "#333")
-       .style("cursor", "pointer")
-       .on("mouseover", (event, d) => handleMouseOver(event, d, event.currentTarget))
-       .on("mouseout", (event, d) => handleMouseOut(event, d, event.currentTarget))
-       .on("click", (event, d) => {
-           svg.selectAll("text.neighborhood-label").remove();
-           const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
-           if (!selectedNeighborhood || selectedNeighborhood !== d) {
-             selectedNeighborhood = d;
-             zoomIn(d);
-             dispatch("selectNeighborhood", { name: n, details: neighborhoodDetails[n], bipocRate: bipocMap[n] });
-           } else {
-             selectedNeighborhood = null;
-             resetZoom();
-             dispatch("selectNeighborhood", { name: "Average", details: defaultDetails, bipocRate: defaultBipocRate });
-           }
-       });
-    // Append icons based on vacancy percentage.
-    svg.selectAll("g.icon-group")
-       .data(neighborhoods)
-       .enter()
-       .append("g")
-       .attr("class", "icon-group")
-       .each(function(d) {
+      })
+      .attr("stroke", "#333")
+      .style("cursor", "pointer")
+      .on("mouseover", (event, d) => handleMouseOver(event, d, event.currentTarget))
+      .on("mouseout", (event, d) => handleMouseOut(event, d, event.currentTarget))
+      .on("click", (event, d) => {
          const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
-         const rate = vacancyMap[n] != null ? vacancyMap[n] : 0;
-         const iconCount = Math.max(Math.ceil(rate * 10), 1);
-         let pts = generatePoints(d, iconCount);
-         if (pts.length === 0) pts = [path.centroid(d)];
-         d3.select(this).selectAll("circle.icon")
-           .data(pts)
-           .enter()
-           .append("circle")
-           .attr("class", "icon")
-           .attr("cx", p => p[0])
-           .attr("cy", p => p[1])
-           .attr("r", 4)
-           .style("fill", "blue")
-           .style("stroke", "#fff")
-           .style("stroke-width", "1px")
-           .on("mouseover", function() {
-             d3.select(this).transition().duration(100).attr("r", 8);
-           })
-           .on("mouseout", function() {
-             d3.select(this).transition().duration(100).attr("r", 4);
-           });
-       });
+         if (!detailedView) {
+           detailedView = true;
+           // Dispatch selected neighborhood to update other vis.
+           dispatch("selectNeighborhood", { name: n, details: neighborhoodDetails[n], bipocRate: bipocMap[n] });
+           // Zoom in on selected neighborhood.
+           zoomIn(d);
+           // Fade out the entire map view.
+           mapGroup.transition().duration(600).style("opacity", 0)
+             .on("end", () => {
+               mapGroup.remove();
+               showDetailPlaceholder(d);
+             });
+         }
+      });
+    // Append icons based on vacancy percentage.
+    mapGroup.selectAll("g.icon-group")
+      .data(neighborhoods)
+      .enter()
+      .append("g")
+      .attr("class", "icon-group")
+      .each(function(d) {
+        const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+        const rate = vacancyMap[n] != null ? vacancyMap[n] : 0;
+        const iconCount = Math.max(Math.ceil(rate * 10), 1);
+        let pts = generatePoints(d, iconCount);
+        if (pts.length === 0) pts = [path.centroid(d)];
+        d3.select(this).selectAll("circle.icon")
+          .data(pts)
+          .enter()
+          .append("circle")
+          .attr("class", "icon")
+          .attr("cx", p => p[0])
+          .attr("cy", p => p[1])
+          .attr("r", 4)
+          .style("fill", "blue")
+          .style("stroke", "#fff")
+          .style("stroke-width", "1px")
+          .on("mouseover", function() {
+            d3.select(this).transition().duration(100).attr("r", 8);
+          })
+          .on("mouseout", function() {
+            d3.select(this).transition().duration(100).attr("r", 4);
+          });
+      });
     drawMapLegend();
   }
   
@@ -221,9 +235,250 @@
       .text("Vacancy Percentage");
   }
   
+  // Add a new helper function to draw the detail placeholder.
+  function showDetailPlaceholder(d) {
+    svg.selectAll("*").remove();
+    const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+    const conversionPercent = simpleConversion[n] != null ? simpleConversion[n] : (neighborhoodDetails[n]?.converted || 0);
+  
+    const bounds = path.bounds(d); // Get the bounding box of the neighborhood.
+    const x0 = bounds[0][0], y0 = bounds[0][1], x1 = bounds[1][0], y1 = bounds[1][1];
+  
+    const detailGroup = svg.append("g")
+      .attr("class", "detail-placeholder")
+      .attr("transform", "translate(0,30) scale(0.9)");
+  
+    detailGroup.append("path")
+      .attr("d", path(d))
+      .attr("fill", "none") // No fill for the neighborhood shape.
+      .attr("stroke", "#333");
+  
+    detailGroup.append("text")
+      .attr("x", (x0 + x1) / 2)
+      .attr("y", y0 - 10)
+      .attr("text-anchor", "middle")
+      .style("font-size", "24px")
+      .style("fill", "#000")
+      .text(`${n}: ${conversionPercent}% of Buildings Now Condos`);
+  
+    // Generate multiple icons randomly distributed across the neighborhood.
+    const iconCount = 100; // Number of icons to generate.
+    const xMin = bounds[0][0], yMin = bounds[0][1];
+    const xMax = bounds[1][0], yMax = bounds[1][1];
+  
+    const isPointInNeighborhood = (x, y) => {
+      const geoPoint = projection.invert([x, y]); // Convert screen coordinates to geographic coordinates.
+      return turf.booleanPointInPolygon({ type: "Point", coordinates: geoPoint }, d);
+    };
+  
+    const homePercent = conversionPercent; // Percentage of conversions that were homes.
+    const nonHomePercent = 100 - homePercent; // Percentage of conversions that were not homes.
+    const homeCount = Math.round(iconCount * (homePercent / 100));
+    const nonHomeCount = iconCount - homeCount;
+  
+    for (let i = 0; i < iconCount; i++) {
+      let iconX, iconY;
+  
+      // Generate random positions within the bounding box until the point is inside the neighborhood.
+      do {
+        iconX = Math.random() * (xMax - xMin) + xMin;
+        iconY = Math.random() * (yMax - yMin) + yMin;
+      } while (!isPointInNeighborhood(iconX, iconY));
+  
+      // Add a low-opacity circle as a drop shadow.
+      detailGroup.append("circle")
+        .attr("cx", iconX)
+        .attr("cy", iconY)
+        .attr("r", 20)
+        .attr("fill", i < homeCount ? "#1f77b4" : "#ff7f0e") // Blue for homes, orange for non-homes.
+        .attr("opacity", 0.3);
+  
+      // Add the home icon with hover effect.
+      detailGroup.append("image")
+        .attr("class", "center-icon")
+        .attr("href", "data/home_icon2.gif")
+        .attr("width", 70)
+        .attr("height", 70)
+        .attr("x", iconX - 35) // Center the icon at the point.
+        .attr("y", iconY - 35)
+        .on("mouseover", function () {
+          d3.select(this)
+            .transition().duration(200)
+            .attr("width", 90) // Increase size on hover.
+            .attr("height", 90)
+            .attr("x", iconX - 45)
+            .attr("y", iconY - 45);
+        })
+        .on("mouseout", function () {
+          d3.select(this)
+            .transition().duration(200)
+            .attr("width", 70) // Restore original size.
+            .attr("height", 70)
+            .attr("x", iconX - 35)
+            .attr("y", iconY - 35);
+        });
+    }
+  
+    detailGroup.transition().duration(600).style("opacity", 1);
+  
+    // When clicking, transition with a zoom-out that removes the offset.
+    detailGroup.style("cursor", "pointer")
+      .on("click", () => {
+        const centerX = (x0 + x1) / 2;
+        const centerY = (y0 + y1) / 2 + 30; // Include vertical offset.
+        detailGroup.transition().duration(600)
+          .attr("transform", `translate(${centerX}, ${centerY}) scale(0)`)
+          .on("end", () => {
+            resetZoom();
+            detailedView = false;
+            drawMapWithFadeIn();
+            dispatch("selectNeighborhood", { name: "Average", details: defaultDetails, bipocRate: defaultBipocRate });
+          });
+      });
+  }
+  
+  // Add new helper function:
+  function drawMapWithFadeIn() {
+    svg.selectAll("*").remove();
+    const mapGroup = svg.append("g").attr("class", "map-view").style("opacity", 0);
+    
+    mapGroup.selectAll("path.neighborhood")
+      .data(neighborhoods)
+      .enter()
+      .append("path")
+      .attr("class", "neighborhood")
+      .attr("d", path)
+      .attr("fill", d => {
+        const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+        return vacancyMap[n] != null ? colorScale(vacancyMap[n]) : "#ccc";
+      })
+      .attr("stroke", "#333")
+      .style("cursor", "pointer")
+      .on("mouseover", (event, d) => handleMouseOver(event, d, event.currentTarget))
+      .on("mouseout", (event, d) => handleMouseOut(event, d, event.currentTarget))
+      .on("click", (event, d) => {
+        const n = (d.properties.Neighborhood || d.properties.neighborhood || d.properties.name || "").trim();
+        if (!detailedView) {
+          detailedView = true;
+          removeClouds(); // Remove clouds when zooming in.
+          dispatch("selectNeighborhood", { name: n, details: neighborhoodDetails[n], bipocRate: bipocMap[n] });
+          zoomIn(d);
+          mapGroup.transition().duration(600).style("opacity", 0)
+            .on("end", () => {
+              mapGroup.remove();
+              showDetailPlaceholder(d);
+            });
+        }
+      });
+    
+    // Add clouds to the zoomed-out view.
+    drawClouds();
+    
+    mapGroup.transition().duration(600).style("opacity", 1);
+  }
+  
+  // Modify the drawClouds function to add a stroke and hover effect.
+  function drawClouds() {
+    const cloudGroup = svg.append("g").attr("class", "clouds");
+  
+    const cloudData = [
+      { x: -200, y: 50, width: 150, height: 80 },
+      { x: 300, y: 100, width: 200, height: 100 },
+      { x: 600, y: 200, width: 180, height: 90 },
+      { x: -400, y: 150, width: 220, height: 110 },
+    ];
+  
+    cloudGroup.selectAll("g.cloud")
+      .data(cloudData)
+      .enter()
+      .append("g")
+      .attr("class", "cloud")
+      .each(function (d) {
+        const cloud = d3.select(this);
+  
+        // Add multiple ellipses to create a fluffy cloud effect.
+        cloud.append("ellipse")
+          .attr("cx", d.x)
+          .attr("cy", d.y)
+          .attr("rx", d.width / 2)
+          .attr("ry", d.height / 2)
+          .attr("fill", "white")
+          .attr("stroke", "#ccc") // Add stroke to the clouds.
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.9);
+  
+        cloud.append("ellipse")
+          .attr("cx", d.x + d.width * 0.3)
+          .attr("cy", d.y - d.height * 0.2)
+          .attr("rx", d.width * 0.6 / 2)
+          .attr("ry", d.height * 0.6 / 2)
+          .attr("fill", "white")
+          .attr("stroke", "#ccc")
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.8);
+  
+        cloud.append("ellipse")
+          .attr("cx", d.x - d.width * 0.3)
+          .attr("cy", d.y - d.height * 0.2)
+          .attr("rx", d.width * 0.5 / 2)
+          .attr("ry", d.height * 0.5 / 2)
+          .attr("fill", "white")
+          .attr("stroke", "#ccc")
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.7);
+      });
+  
+    // Add hover effect to make clouds more transparent.
+    cloudGroup.selectAll("g.cloud")
+      .on("mouseover", function () {
+        d3.select(this).selectAll("ellipse")
+          .transition().duration(200)
+          .attr("opacity", 0.4); // Reduce opacity on hover.
+      })
+      .on("mouseout", function () {
+        d3.select(this).selectAll("ellipse")
+          .transition().duration(200)
+          .attr("opacity", (d, i) => 0.9 - i * 0.1); // Restore original opacity.
+      });
+  
+    // Animate the clouds to move horizontally.
+    function animateClouds() {
+      cloudGroup.selectAll("g.cloud")
+        .transition()
+        .duration(30000)
+        .ease(d3.easeLinear)
+        .attr("transform", d => `translate(${d.x + 800}, ${d.y})`)
+        .on("end", function (d) {
+          d3.select(this).attr("transform", `translate(${d.x - 800}, ${d.y})`); // Reset position after moving off-screen.
+          animateClouds(); // Restart animation.
+        });
+    }
+  
+    animateClouds();
+  }
+  
+  // Add a function to remove clouds.
+  function removeClouds() {
+    svg.selectAll("g.clouds").remove();
+  }
+  
+  // Ensure clouds are drawn by default when the page loads.
   onMount(async () => {
     svg = d3.select(svgElement).attr("width", width).attr("height", height);
+  
+    const defs = svg.append("defs");
+    const filter = defs.append("filter").attr("id", "cloud-shadow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
+    filter.append("feDropShadow")
+      .attr("dx", 5)
+      .attr("dy", 5)
+      .attr("stdDeviation", 10)
+      .attr("flood-color", "#000")
+      .attr("flood-opacity", 0.2);
+  
     await loadData();
+  
+    // Draw clouds in the zoomed-out view by default.
+    drawClouds();
   });
 </script>
 
