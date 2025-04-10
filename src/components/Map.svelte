@@ -494,7 +494,7 @@
       d3.select(this)
         .transition()
         .duration(() => {
-          const distance = screenWidth + cloudWidth+60; // Total distance to travel, where 60 is cloud shadow length
+          const distance = screenWidth + cloudWidth+60; // Total distance to travel, where 60 is cloud shadow lengthl
           return (distance / d.speed) * 1000; // Duration in milliseconds based on individual speed
         })
         .ease(d3.easeLinear)
