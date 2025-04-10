@@ -160,5 +160,10 @@
     text-align: center;
     margin: 20px auto; /* Center the race bar chart horizontally */
     max-width: 400px; /* Ensure it doesn't exceed the chart width */
+    border: 1px solid #cccccc00; /* Add a small border around the race bar */
+    border-radius: 8px; /* Match the pie chart's rounded corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Match the pie chart's shadow */
+    padding: 10px; /* Add padding inside the border */
+    background-color: #f9f9f9;
   }
 </style>

@@ -13,7 +13,21 @@
   ];
   
   function drawPieChart() {
-    if (!details) return;
+    if (!details || (details.converted < 1 || details.others < 1)) {
+      d3.select(container).selectAll("*").remove(); // Clear existing chart
+      d3.select(container)
+        .append("text")
+        .attr("class", "no-data-text")
+        .attr("x", chartWidth / 2)
+        .attr("y", chartHeight / 2)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .style("font-size", "18px")
+        .style("font-weight", "bold")
+        .style("fill", "#666")
+        .text("No Data For This Region");
+      return;
+    }
     const pieData = [
       { label: "Converted Dwellings", value: details.converted },
       { label: "Others", value: details.others }

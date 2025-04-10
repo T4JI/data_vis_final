@@ -18,7 +18,8 @@
 </script>
 <header style="text-align: center; padding: 20px;">
   <h1>Bubble Bursters Interactive Map</h1>
-  <p>A dynamic data visualization project exploring Boston neighborhoods.</p>
+  <p> Click on a Neighborhood to zoom in, click again to zoom out.</p>
+  
 </header>
 <div class="dashboard-container">
   <div style="display: flex; justify-content: center; align-items: flex-start;">
@@ -32,6 +33,7 @@
       <RaceBarChart selectedNeighborhoodName={selectedNeighborhoodName} />
     </div>
   </div>
+  
 </div>
 <style>
   .dashboard-container {

@@ -330,21 +330,31 @@
   
       // Add a low-opacity circle as a drop shadow for only `shadowCount` icons.
       if (shadowHomeCounter < shadowHomeCount && i < homeCount) {
-        detailGroup.append("circle")
+        detailGroup.append("ellipse") // Use ellipse for shadow
           .attr("cx", iconX)
-          .attr("cy", iconY)
-          .attr("r", 20)
-          .attr("fill", "#ff7f0e") // Blue for homes.
+          .attr("cy", iconY + 10) // Offset slightly below the icon
+          .attr("rx", 20) // Increased horizontal radius
+          .attr("ry", 12) // Increased vertical radius
+          .attr("fill", "#ff7f0e") // Blue for homes
           .attr("opacity", 0.3);
         shadowHomeCounter++;
       } else if (shadowNonHomeCounter < shadowNonHomeCount && i >= homeCount) {
-        detailGroup.append("circle")
+        detailGroup.append("ellipse") // Use ellipse for shadow
           .attr("cx", iconX)
-          .attr("cy", iconY)
-          .attr("r", 20)
-          .attr("fill", "#1f77b4") // Orange for non-homes.
+          .attr("cy", iconY + 10) // Offset slightly below the icon
+          .attr("rx", 20) // Increased horizontal radius
+          .attr("ry", 12) // Increased vertical radius
+          .attr("fill", "#1f77b4") // Orange for non-homes
           .attr("opacity", 0.3);
         shadowNonHomeCounter++;
+      } else {
+        detailGroup.append("ellipse") // Grey shadow for houses with no shadows
+          .attr("cx", iconX)
+          .attr("cy", iconY + 10) // Offset slightly below the icon
+          .attr("rx", 15) // Horizontal radius
+          .attr("ry", 8) // Vertical radius
+          .attr("fill", "#aaa") // Grey color
+          .attr("opacity", 0.2);
       }
   
       // Add the home icon.
@@ -541,8 +551,10 @@
 
 <style>
   svg {
-    /* Remove the border */
-    border: none;
+    border: 1px solid #cccccc00; /* Add a small border around the map */
+    border-radius: 8px; /* Match the pie chart's rounded corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Match the pie chart's shadow */
+    background-color: #f9f9f9; /* Match the pie chart's soft grey background */
   }
   /* ...existing styles... */
 </style>
