@@ -114,18 +114,30 @@
     d3.select(el).attr("fill", vacancyMap[name] != null ? colorScale(vacancyMap[name]) : "#ccc");
   }
   
+  // Add a function to fade clouds in or out.
+  function fadeClouds(opacity) {
+    svg.selectAll("g.clouds")
+      .transition()
+      .duration(800)
+      .style("opacity", opacity);
+  }
+  
   // Zoom functions.
   function zoomIn(feature) {
     const t = d3.transition().duration(800);
     projection.fitExtent([[padding, padding], [width - padding, height - padding]], feature);
     path = d3.geoPath().projection(projection);
     svg.selectAll("path.neighborhood").transition(t).attr("d", path);
+  
+    fadeClouds(0); // Fade clouds out when zooming in.
   }
   function resetZoom() {
     const t = d3.transition().duration(800);
     projection = createDefaultProjection();
     path = d3.geoPath().projection(projection);
     svg.selectAll("path.neighborhood").transition(t).attr("d", path);
+  
+    fadeClouds(1); // Fade clouds in when resetting zoom.
   }
   
   // Draw the map: neighborhoods and icons.
@@ -290,7 +302,7 @@
         .attr("cx", iconX)
         .attr("cy", iconY)
         .attr("r", 20)
-        .attr("fill", i < homeCount ? "#1f77b4" : "#ff7f0e") // Blue for homes, orange for non-homes.
+        .attr("fill", i < homeCount ? "#ff7f0e": "#1f77b4") // Blue for homes, orange for non-homes.
         .attr("opacity", 0.3);
   
       // Add the home icon.
@@ -300,7 +312,13 @@
         .attr("width", 70)
         .attr("height", 70)
         .attr("x", iconX - 35) // Center the icon at the point.
-        .attr("y", iconY - 35);
+        .attr("y", iconY - 35)
+        .on("mouseover", function () {
+          d3.select(this).transition().duration(200).attr("width", 90).attr("height", 90).attr("x", iconX - 45).attr("y", iconY - 45); // Increase size on hover.
+        })
+        .on("mouseout", function () {
+          d3.select(this).transition().duration(200).attr("width", 70).attr("height", 70).attr("x", iconX - 35).attr("y", iconY - 35); // Restore size.
+        });
     }
   
     detailGroup.transition().duration(600).style("opacity", 1);
@@ -363,7 +381,7 @@
   
   // Modify the drawClouds function to improve cloud appearance.
   function drawClouds() {
-    const cloudGroup = svg.append("g").attr("class", "clouds");
+    const cloudGroup = svg.append("g").attr("class", "clouds").style("opacity", 1);
   
     const cloudData = [
       { x: -200, y: 50, width: 150, height: 80 },
@@ -386,24 +404,48 @@
           .attr("cy", d.y)
           .attr("rx", d.width / 2)
           .attr("ry", d.height / 2)
-          .attr("fill", "white")
-          .attr("opacity", 0.9);
+          .attr("fill", "#D3D3D3") // Light blue color for clouds.
+          .attr("stroke", "#D3D3D3") // Add stroke to clouds.
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.9)
+          .on("mouseover", function () {
+            d3.select(this).transition().duration(200).attr("opacity", 0.5); // Reduce opacity on hover.
+          })
+          .on("mouseout", function () {
+            d3.select(this).transition().duration(200).attr("opacity", 0.9); // Restore opacity.
+          });
   
         cloud.append("ellipse")
           .attr("cx", d.x + d.width * 0.3)
           .attr("cy", d.y - d.height * 0.2)
           .attr("rx", d.width * 0.6 / 2)
           .attr("ry", d.height * 0.6 / 2)
-          .attr("fill", "white")
-          .attr("opacity", 0.8);
+          .attr("fill", "#D3D3D3")
+          .attr("stroke", "#D3D3D3")
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.8)
+          .on("mouseover", function () {
+            d3.select(this).transition().duration(200).attr("opacity", 0.5);
+          })
+          .on("mouseout", function () {
+            d3.select(this).transition().duration(200).attr("opacity", 0.8);
+          });
   
         cloud.append("ellipse")
           .attr("cx", d.x - d.width * 0.3)
           .attr("cy", d.y - d.height * 0.2)
           .attr("rx", d.width * 0.5 / 2)
           .attr("ry", d.height * 0.5 / 2)
-          .attr("fill", "white")
-          .attr("opacity", 0.7);
+          .attr("fill", "#D3D3D3")
+          .attr("stroke", "#D3D3D3")
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.7)
+          .on("mouseover", function () {
+            d3.select(this).transition().duration(200).attr("opacity", 0.5);
+          })
+          .on("mouseout", function () {
+            d3.select(this).transition().duration(200).attr("opacity", 0.7);
+          });
       });
   
     // Animate the clouds to move horizontally.
@@ -453,6 +495,9 @@
 </div>
 
 <style>
-  svg { border: 1px solid #ccc; }
+  svg {
+    /* Remove the border */
+    border: none;
+  }
   /* ...existing styles... */
 </style>

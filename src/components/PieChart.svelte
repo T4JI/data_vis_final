@@ -4,7 +4,7 @@
   
   export let details; // { converted, others }
   let container;
-  const chartWidth = 300, chartHeight = 300;
+  const chartWidth = 400, chartHeight = 300; // Increased chart width
   const radius = Math.min(chartWidth, chartHeight) / 2;
   
   const legendData = [
@@ -26,10 +26,10 @@
                  .attr("width", chartWidth)
                  .attr("height", chartHeight)
                  .append("g")
-                 .attr("transform", `translate(${chartWidth/2}, ${chartHeight/2})`);
+                 .attr("transform", `translate(${chartWidth / 2}, ${chartHeight / 2})`);
     } else {
       svgPie = svgPie.select("g") || d3.select(container).select("svg.pie-chart").append("g")
-                      .attr("transform", `translate(${chartWidth/2}, ${chartHeight/2})`);
+                      .attr("transform", `translate(${chartWidth / 2}, ${chartHeight / 2})`);
     }
   
     const pie = d3.pie().sort(null).value(d => d.value);
@@ -89,18 +89,18 @@
   
   function drawLegend() {
     d3.select(container).select("svg.legend").remove();
-    const legendWidth = 300, legendHeight = 50;
+    const legendWidth = 400, legendHeight = 50; // Increased legend width
     const svgLegend = d3.select(container)
                         .append("svg")
                         .attr("class", "legend")
                         .attr("width", legendWidth)
                         .attr("height", legendHeight);
-    const legendItemHeight = 20;
+    const legendItemWidth = legendWidth / legendData.length;
     const legendItems = svgLegend.selectAll(".legend-item")
                                  .data(legendData)
                                  .enter().append("g")
                                  .attr("class", "legend-item")
-                                 .attr("transform", (d, i) => `translate(0, ${i * legendItemHeight})`);
+                                 .attr("transform", (d, i) => `translate(${i * legendItemWidth}, 0)`);
     legendItems.append("rect")
                .attr("x", 10)
                .attr("y", 0)
@@ -118,12 +118,27 @@
   onMount(drawPieChart);
   afterUpdate(drawPieChart);
 </script>
-<div>
-  <h4 style="text-align: center; margin-bottom: 10px;">
-    Percent of Condo Conversions That Were Homes
-  </h4>
+<div class="pie-chart-container">
+  <h4>Percent of Condo Conversions That Were Homes</h4>
   <div bind:this={container}></div>
 </div>
 <style>
-  div { text-align: center; }
+  .pie-chart-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the pie chart horizontally */
+    justify-content: center; /* Center the pie chart vertically */
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  h4 {
+    margin-bottom: 10px;
+    font-weight: 400;
+    color: #444;
+  }
 </style>

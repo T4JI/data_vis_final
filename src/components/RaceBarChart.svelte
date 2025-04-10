@@ -10,7 +10,7 @@
                        .domain(raceCategories)
                        .range(d3.schemeSpectral[raceCategories.length])
                        .unknown("#ccc");
-  const chartWidth = 300, chartHeight = 30;
+  const chartWidth = 400, chartHeight = 30;
   
   // Compute average for each category.
   function computeAverage(data) {
@@ -145,7 +145,13 @@
   });
   afterUpdate(drawChart);
 </script>
-<div id="race-bar" style="width:100%; max-width:300px; height:30px; margin: 10px auto;"></div>
+
+<div id="race-bar" class="race-bar-container"></div>
+
 <style>
-  #race-bar { text-align: center; }
+  .race-bar-container {
+    text-align: center;
+    margin: 20px auto; /* Center the race bar chart horizontally */
+    max-width: 400px; /* Ensure it doesn't exceed the chart width */
+  }
 </style>
