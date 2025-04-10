@@ -10,7 +10,7 @@
                        .domain(raceCategories)
                        .range(d3.schemeSpectral[raceCategories.length])
                        .unknown("#ccc");
-  const chartWidth = 400, chartHeight = 30;
+  const chartWidth = 436, chartHeight = 30;
   
   // Compute average for each category.
   function computeAverage(data) {
@@ -158,8 +158,8 @@
 <style>
   .race-bar-container {
     text-align: center;
-    margin: 20px auto; /* Center the race bar chart horizontally */
-    max-width: 400px; /* Ensure it doesn't exceed the chart width */
+    margin: 0px; /* Reduce bottom margin to 10px */
+    max-width: 436px; /* Ensure it doesn't exceed the chart width */
     border: 1px solid #cccccc00; /* Add a small border around the race bar */
     border-radius: 8px; /* Match the pie chart's rounded corners */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Match the pie chart's shadow */

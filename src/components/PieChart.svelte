@@ -4,7 +4,7 @@
   
   export let details; // { converted, others }
   let container;
-  const chartWidth = 400, chartHeight = 300; // Increased chart width
+  const chartWidth = 450, chartHeight = 350; // Increased chart width
   const radius = Math.min(chartWidth, chartHeight) / 2;
   
   const legendData = [
@@ -13,7 +13,7 @@
   ];
   
   function drawPieChart() {
-    if (!details || (details.converted < 1 || details.others < 1)) {
+    if (1>2) {
       d3.select(container).selectAll("*").remove(); // Clear existing chart
       d3.select(container)
         .append("text")
@@ -103,27 +103,28 @@
   
   function drawLegend() {
     d3.select(container).select("svg.legend").remove();
-    const legendWidth = 400, legendHeight = 50; // Increased legend width
+    const legendWidth = 200, legendHeight = 50 * legendData.length; // Adjust height for vertical stacking
     const svgLegend = d3.select(container)
                         .append("svg")
                         .attr("class", "legend")
                         .attr("width", legendWidth)
-                        .attr("height", legendHeight);
-    const legendItemWidth = legendWidth / legendData.length;
+                        .attr("height", legendHeight)
+                        .style("position", "relative")
+                        .style("left", "-80px"); // Move legend 50px to the left
     const legendItems = svgLegend.selectAll(".legend-item")
                                  .data(legendData)
                                  .enter().append("g")
                                  .attr("class", "legend-item")
-                                 .attr("transform", (d, i) => `translate(${i * legendItemWidth}, 0)`);
+                                 .attr("transform", (d, i) => `translate(0, ${i * 20})`); // Stack items vertically
     legendItems.append("rect")
                .attr("x", 10)
-               .attr("y", 0)
+               .attr("y", 10)
                .attr("width", 15)
                .attr("height", 15)
                .attr("fill", d => d.color);
     legendItems.append("text")
-               .attr("x", 30)
-               .attr("y", 12)
+               .attr("x", 35)
+               .attr("y", 22)
                .text(d => d.label)
                .style("font-size", "12px")
                .style("fill", "#333");
@@ -133,7 +134,7 @@
   afterUpdate(drawPieChart);
 </script>
 <div class="pie-chart-container">
-  <h4>Percent of Condo Conversions That Were Homes</h4>
+  <h4>Percent of Conversions That Were Homes</h4>
   <div bind:this={container}></div>
 </div>
 <style>
@@ -146,8 +147,9 @@
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-top: 20px;
+    padding: 5px;
+    margin-top: 5px;
+    margin-bottom: -30px; /* Set a smaller margin underneath */
   }
 
   h4 {

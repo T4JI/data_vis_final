@@ -141,6 +141,9 @@
   
     fadeClouds(0); // Fade clouds out when zooming in.
     fadeLegend(0); // Fade legend out when zooming in.
+
+    // Fade out the "Learn More About Data" button.
+    d3.select(".learn-more-box").transition().duration(800).style("opacity", 0);
   }
   function resetZoom() {
     const t = d3.transition().duration(800);
@@ -150,6 +153,9 @@
   
     fadeClouds(1); // Fade clouds in when resetting zoom.
     fadeLegend(1); // Fade legend back in smoothly when resetting zoom.
+
+    // Fade back in the "Learn More About Data" button.
+    d3.select(".learn-more-box").transition().duration(800).style("opacity", 1);
 
     // Redraw the legend after resetting the zoom.
     drawMapLegend();
@@ -294,7 +300,7 @@
       .attr("text-anchor", "middle")
       .style("font-size", "24px")
       .style("fill", "#000")
-      .text(`${n}: ${conversionPercent}% of Buildings Now Condos`);
+      .text(conversionPercent === 0 ? "Not Enough Data For This Region" : `${n}: ${conversionPercent}% of Buildings Now Condos`);
   
     // Generate multiple icons randomly distributed across the neighborhood.
     const iconCount = 100; // Number of icons to generate.
@@ -542,11 +548,28 @@
     // Draw clouds in the zoomed-out view by default.
     drawClouds();
   });
+
+  let overlayVisible = false;
 </script>
 
-<div style="display: flex; justify-content: center; align-items: flex-start;">
+<div style="display: flex; justify-content: center; align-items: flex-start; position: relative;">
   <svg bind:this={svgElement} viewBox={`0 0 ${width} ${height}`}></svg>
-  <!-- The parent component will listen for the "selectNeighborhood" event to update the PieChart and BipocIndicator -->
+  <div 
+    class="learn-more-box" 
+    on:mouseover={() => overlayVisible = true} 
+    on:mouseout={() => overlayVisible = false}
+  >
+    Learn More About Viz
+  </div>
+  <div class="data-overlay" style="opacity: {overlayVisible ? 1 : 0}; pointer-events: {overlayVisible ? 'auto' : 'none'};">
+    <p>
+      Click on a Neighborhood to zoom in, click again to zoom out.<br><br>
+      This data was created using Analyze Boston's property assessment tables and 2022 parcel data.
+      The dataset consists of condo conversions in Boston from 2015 to 2024. Condo conversions are identified by finding
+      addresses that have a single entry in one year but multiple entries in the subsequent year, where addresses are defined
+      by a combination of street number, name, and suffix.
+    </p>
+  </div>
 </div>
 
 <style>
@@ -557,4 +580,45 @@
     background-color: #f9f9f9; /* Match the pie chart's soft grey background */
   }
   /* ...existing styles... */
+
+  .learn-more-box {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    z-index: 2;
+  }
+
+  .learn-more-box:hover {
+    background-color: #0056b3;
+  }
+
+  .data-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 1;
+    opacity: 0; /* Start hidden */
+    transition: opacity 0.3s ease; /* Add fade-in transition */
+  }
+
+  .data-overlay p {
+    font-size: 14px;
+    color: #555;
+    margin: 0 20px;
+  }
 </style>

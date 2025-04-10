@@ -17,8 +17,8 @@
   }
 </script>
 <header style="text-align: center; padding: 20px;">
-  <h1>Bubble Bursters Interactive Map</h1>
-  <p> Click on a Neighborhood to zoom in, click again to zoom out.</p>
+  <h1>Boston Condo Conversion Map</h1>
+  
   
 </header>
 <div class="dashboard-container">
@@ -26,14 +26,17 @@
     <Map 
       on:selectNeighborhood={handleSelectNeighborhood}
       on:resetNeighborhood={handleResetNeighborhood} />
+      
     <div style="margin-left: 20px; display: flex; flex-direction: column; align-items: center;">
       {#if selectedDetails}
         <PieChart details={selectedDetails} />
       {/if}
       <RaceBarChart selectedNeighborhoodName={selectedNeighborhoodName} />
     </div>
+    
   </div>
-  
+
+
 </div>
 <style>
   .dashboard-container {
